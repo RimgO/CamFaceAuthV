@@ -33,7 +33,12 @@ const Authentication: React.FC<AuthenticationProps> = ({ users }) => {
         const match = faceMatcher.findBestMatch(detection.descriptor);
 
         if (match.distance < 0.6) {
-          setResult({ success: true, name: match.label });
+          const numberMatch = match.label.match(/\d+$/);  // Get number from end of string
+          const personNumber = numberMatch ? numberMatch[0] : '';
+          const user_idx = users.findIndex(user => user.name === `person${personNumber}`);
+
+          console.log('Match:', match.label, 'User Index:', user_idx, 'User Name:', users[parseInt(personNumber) - 1].name);
+          setResult({ success: true, name: users[parseInt(personNumber) - 1].name });
         } else {
           setResult({ success: false });
         }

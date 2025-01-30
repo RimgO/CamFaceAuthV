@@ -5,12 +5,23 @@ import { User } from '../types';
 
 interface RegistrationProps {
   onRegister: (user: User) => void;
+  checkNameExists: (name: string) => boolean;
 }
 
-const Registration: React.FC<RegistrationProps> = ({ onRegister }) => {
+const Registration: React.FC<RegistrationProps> = ({ onRegister, checkNameExists }) => {
   const [name, setName] = useState('');
   const [step, setStep] = useState(1);
   const [processing, setProcessing] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+
+  const handleNameSubmit = () => {
+    if (checkNameExists(name)) {
+      setNameError('この名前はすでに登録されています');
+      return;
+    }
+    setNameError(null);
+    setStep(2);
+  };
 
   const handleCapture = async (imageSrc: string) => {
     setProcessing(true);
@@ -22,10 +33,13 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister }) => {
         .withFaceDescriptor();
 
       if (detections) {
-        onRegister({
+        const user = {
           name,
           descriptor: detections.descriptor
-        });
+        };
+        console.log(user);
+        onRegister(user);
+        localStorage.setItem('registeredUser', JSON.stringify(user));
         setStep(3);
       } else {
         alert('顔を検出できませんでした。もう一度お試しください。');
@@ -44,17 +58,27 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister }) => {
       {step === 1 && (
         <div>
           <p className="mb-4">名前を入力してください</p>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full p-2 border rounded-lg mb-4"
-            placeholder="名前を入力"
-          />
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setNameError(null);
+              }}
+              className={`w-full p-2 border rounded-lg ${
+                nameError ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder="名前を入力"
+            />
+            {nameError && (
+              <p className="text-red-500 text-sm">{nameError}</p>
+            )}
+          </div>
           <button
-            onClick={() => setStep(2)}
+            onClick={handleNameSubmit}
             disabled={!name}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+            className="w-full mt-4 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
           >
             次へ
           </button>
