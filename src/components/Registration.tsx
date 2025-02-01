@@ -33,13 +33,10 @@ const Registration: React.FC<RegistrationProps> = ({ onRegister, checkNameExists
         .withFaceDescriptor();
 
       if (detections) {
-        const user = {
+        onRegister({
           name,
           descriptor: detections.descriptor
-        };
-        console.log(user);
-        onRegister(user);
-        localStorage.setItem('registeredUser', JSON.stringify(user));
+        });
         setStep(3);
       } else {
         alert('顔を検出できませんでした。もう一度お試しください。');

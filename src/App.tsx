@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as faceapi from 'face-api.js';
-import { Scan, UserPlus, Trash2 } from 'lucide-react';
+import { Scan, UserPlus, Trash2, Edit2 } from 'lucide-react';
 import Registration from './components/Registration';
 import Authentication from './components/Authentication';
 import { User } from './types';
@@ -35,6 +35,9 @@ function App() {
   });
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [newName, setNewName] = useState('');
+  const [nameError, setNameError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -103,8 +106,41 @@ function App() {
     }
   };
 
-  const checkNameExists = (name: string): boolean => {
-    return users.some(user => user.name === name);
+  const checkNameExists = (name: string, excludeCurrentName?: string): boolean => {
+    return users.some(user => user.name === name && user.name !== excludeCurrentName);
+  };
+
+  const startEditing = (name: string) => {
+    setEditingUser(name);
+    setNewName(name);
+    setNameError(null);
+  };
+
+  const cancelEditing = () => {
+    setEditingUser(null);
+    setNewName('');
+    setNameError(null);
+  };
+
+  const handleUpdateName = () => {
+    if (!newName.trim()) {
+      setNameError('名前を入力してください');
+      return;
+    }
+
+    if (checkNameExists(newName, editingUser)) {
+      setNameError('この名前はすでに使用されています');
+      return;
+    }
+
+    setUsers(users.map(user => 
+      user.name === editingUser
+        ? { ...user, name: newName.trim() }
+        : user
+    ));
+    setEditingUser(null);
+    setNewName('');
+    setNameError(null);
   };
 
   if (!modelsLoaded) {
@@ -165,18 +201,63 @@ function App() {
               <h3 className="text-lg font-semibold mb-4">登録済みユーザー</h3>
               <ul className="space-y-2">
                 {users.map(user => (
-                  <li key={user.name} className="flex justify-between items-center">
-                    <span>{user.name}</span>
-                    <button
-                      onClick={() => handleRemoveUser(user.name)}
-                      className="text-red-600 hover:text-red-700 p-1"
-                      title="登録解除"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                  <li key={user.name} className="flex items-center">
+                    {editingUser === user.name ? (
+                      <div className="flex-1 flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={newName}
+                          onChange={(e) => {
+                            setNewName(e.target.value);
+                            setNameError(null);
+                          }}
+                          className={`flex-1 p-1 border rounded ${
+                            nameError ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                          placeholder="新しい名前を入力"
+                        />
+                        <button
+                          onClick={handleUpdateName}
+                          className="text-green-600 hover:text-green-700 p-1"
+                          title="保存"
+                        >
+                          保存
+                        </button>
+                        <button
+                          onClick={cancelEditing}
+                          className="text-gray-600 hover:text-gray-700 p-1"
+                          title="キャンセル"
+                        >
+                          キャンセル
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex items-center justify-between">
+                        <span>{user.name}</span>
+                        <div className="flex items-center space-x-1">
+                          <button
+                            onClick={() => startEditing(user.name)}
+                            className="text-blue-600 hover:text-blue-700 p-1"
+                            title="名前を変更"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleRemoveUser(user.name)}
+                            className="text-red-600 hover:text-red-700 p-1"
+                            title="登録解除"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
+              {nameError && (
+                <p className="text-red-500 text-sm mt-2">{nameError}</p>
+              )}
               <button
                 onClick={handleReset}
                 className="mt-4 w-full text-red-600 border border-red-600 rounded-lg py-2 hover:bg-red-50 transition-colors"
